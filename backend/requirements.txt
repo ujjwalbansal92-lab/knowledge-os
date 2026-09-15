@@ -4,3 +4,4 @@ youtube-transcript-api==0.6.2
 yt-dlp==2024.8.6
 pydantic==2.9.2
 python-dotenv==1.0.1
+google-genai
