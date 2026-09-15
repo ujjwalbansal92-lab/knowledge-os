@@ -8,6 +8,8 @@ services:
     envVars:
       - key: USE_MOCK_LLM
         value: "true"
+      - key: PYTHON_VERSION
+        value: "3.12.9"
       - key: GEMINI_API_KEY
-        sync: false   # set this in the Render dashboard once you have a key
+        sync: false
     plan: free
