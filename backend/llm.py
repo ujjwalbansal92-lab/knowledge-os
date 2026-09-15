@@ -1,24 +1,18 @@
 """
 LLM interface for Knowledge OS.
 
-Right now this returns a MOCK response so the rest of the pipeline can be
-built and tested without an API key or spending any quota.
-
-To wire in real Gemini Flash / Flash-Lite later:
-1. `pip install google-genai` (add to requirements.txt)
-2. Set GEMINI_API_KEY in your environment (.env file, or Render's env vars)
-3. Replace the body of `summarize_transcript()` below with a real call,
-   keeping the same return shape: {"title": str, "summary": str, "tags": [str, ...]}
-   The PROMPT constant below is written so you can paste it straight into
-   a Gemini call's system/user message once you switch over.
+Uses Gemini Flash-Lite to summarize and tag transcripts. Set USE_MOCK_LLM=false
+and GEMINI_API_KEY in the environment to use the real model; otherwise this
+falls back to a deterministic mock so the pipeline can be tested for free.
 """
 
 import os
 import re
+import json
 import hashlib
 
 USE_MOCK = os.getenv("USE_MOCK_LLM", "true").lower() != "false"
-
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 PROMPT = """You are helping build a personal knowledge base from YouTube video transcripts.
 Given the transcript below, respond with STRICT JSON only, no markdown fences, no preamble:
 
@@ -38,7 +32,6 @@ _MOCK_TAG_POOL = [
     "psychology", "new vocabulary", "geography", "history", "science",
     "productivity", "finance", "technology", "health", "philosophy",
 ]
-
 
 def _mock_response(transcript: str, video_title: str | None) -> dict:
     words = re.findall(r"[A-Za-z']{5,}", transcript)
@@ -64,6 +57,30 @@ def _mock_response(transcript: str, video_title: str | None) -> dict:
         "tags": tags,
     }
 
+def _clean_json_text(text: str) -> str:
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:]
+        text = text.strip()
+    return text
+
+def _real_response(transcript: str, video_title: str | None) -> dict:
+    from google import genai
+
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    resp = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=PROMPT.format(transcript=transcript[:15000]),
+    )
+    data = json.loads(_clean_json_text(resp.text))
+
+    return {
+        "title": str(data.get("title") or video_title or "Untitled Knowledge Card")[:80],
+        "summary": str(data.get("summary", "")),
+        "tags": [str(t).lower() for t in data.get("tags", [])][:5],
+    }
 
 def summarize_transcript(transcript: str, video_title: str | None = None) -> dict:
     """
@@ -72,16 +89,4 @@ def summarize_transcript(transcript: str, video_title: str | None = None) -> dic
     if USE_MOCK:
         return _mock_response(transcript, video_title)
 
-    # --- Real Gemini call goes here when you're ready ---
-    # from google import genai
-    # client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-    # resp = client.models.generate_content(
-    #     model="gemini-2.0-flash-lite",
-    #     contents=PROMPT.format(transcript=transcript[:15000]),
-    # )
-    # import json
-    # return json.loads(resp.text)
-    raise NotImplementedError(
-        "USE_MOCK_LLM is false but no real LLM call is implemented yet. "
-        "See the comment block in llm.py."
-    )
+    return _real_response(transcript, video_title)
