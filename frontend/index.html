@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Knowledge OS</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0f172a" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Knowledge OS</h1>
+    <div id="config-toggle" title="Backend URL settings">⚙️</div>
+  </header>
+
+  <div id="config-panel" class="hidden">
+    <label for="backend-url">Backend URL</label>
+    <input id="backend-url" type="url" placeholder="https://your-app.onrender.com" />
+    <button id="save-config">Save</button>
+  </div>
+
+  <main>
+    <section id="submit-section">
+      <input id="yt-url" type="url" placeholder="Paste a YouTube link…" />
+      <button id="submit-link">Create card</button>
+      <div id="status" class="status hidden"></div>
+
+      <div id="manual-fallback" class="hidden">
+        <p>Automatic extraction failed for this video. Paste the transcript manually:</p>
+        <textarea id="manual-transcript" rows="6" placeholder="Paste transcript text here…"></textarea>
+        <button id="submit-manual">Create card from pasted transcript</button>
+      </div>
+    </section>
+
+    <section id="tag-filter-section">
+      <span class="filter-label">Filter:</span>
+      <div id="tag-chips"></div>
+      <button id="clear-filter" class="hidden">Clear</button>
+    </section>
+
+    <section id="cards-section">
+      <div id="cards-list"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
